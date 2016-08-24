@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>First THREE.js app</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+	<script src="lib/three.min.js"></script>
+	<script src="lib/OBJLoader.js"></script>
+	<script src="lib/MTLLoader.js"></script>
+    <script>
+        // Set up three.js render context
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 5;
+
+        var ambient = new THREE.AmbientLight(0xFFFF44);
+		scene.add(ambient);
+
+        var directionalLight = new THREE.DirectionalLight(0xffeedd);
+		directionalLight.position.set(0, 0, 1).normalize();
+		scene.add(directionalLight);
+
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        var mtlLoader = new THREE.MTLLoader();
+        var objLoader = new THREE.OBJLoader();
+
+        var Model = function() {
+            this.loadedMesh = null;
+            this.meshIsLoaded = false;
+        };
+        
+        Model.prototype = {
+            constructor: Model,
+
+            load: function(path, mtlName, objName) {
+                var that = this; // Used to save global Model scope in loader callback.
+
+                var onProgress = function(xhr) {
+		            if (xhr.lengthComputable) {
+			            var percentComplete = xhr.loaded / xhr.total * 100;
+			    	    console.log( Math.round(percentComplete, 2) + '% downloaded' );
+			        }
+		        };
+
+                var onError = function(err) { };
+
+                mtlLoader.setPath(path);
+                mtlLoader.load(mtlName, function(materials) {
+                    materials.preload();
+                    objLoader.setMaterials(materials);
+                    objLoader.setPath(path);
+                    objLoader.load(objName, function(object) {
+                        scene.add(object);
+                        that.loadedMesh = object;
+                        that.meshIsLoaded = true;
+                    });
+                }, onProgress, onError);
+            }
+        };
+
+        // Scene objects
+        var cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+        var greenMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        var cube = new THREE.Mesh(cubeGeometry, greenMaterial);
+        scene.add(cube);
+
+        var spaceman = new Model();
+        spaceman.load("ACES/", "acesjustforroomshow.mtl", "acesjustforroomshow.obj");
+
+        function updateScene()
+        {
+            if (spaceman.meshIsLoaded) {
+                spaceman.loadedMesh.rotation.z += 0.1;
+                spaceman.loadedMesh.rotation.y = Math.PI;
+                spaceman.loadedMesh.scale.set(5, 5, 5);
+            }
+
+            cube.rotation.x += 0.1;
+            cube.rotation.y += 0.1;
+        }
+
+        // Render
+        function render() {
+            requestAnimationFrame(render);
+            updateScene();
+            renderer.render(scene, camera);
+        }
+
+        render();
+	</script>
+	</body>
+</html>
