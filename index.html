@@ -12,6 +12,32 @@
 	<script src="lib/three.min.js"></script>
 	<script src="lib/OBJLoader.js"></script>
 	<script src="lib/MTLLoader.js"></script>
+	<script src="ACES/spaceman.js"></script>
+
+    <script type="x-shader/x-vertex" id="vertexShader">  
+        precision mediump float;
+        precision mediump int;
+
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+
+        attribute vec3 position;
+
+        void main() {
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="fragmentShader">
+        precision mediump float;
+        precision mediump int;
+    
+        uniform vec3 color;
+
+        void main() {
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+
     <script>
         // Set up three.js render context
         var scene = new THREE.Scene();
@@ -29,18 +55,34 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        var mtlLoader = new THREE.MTLLoader();
-        var objLoader = new THREE.OBJLoader();
+        var vertices = Float32Array.from(spaceman.vertices);
+        var normals = Float32Array.from(spaceman.normals);
+        var uvs = Float32Array.from(spaceman.uvs);
+
+        var customShader = {
+            uniforms: {
+                color: {}
+            },
+            attributes: {
+
+            },
+            vertexShader: document.getElementById('vertexShader').textContent,
+            fragmentShader: document.getElementById('fragmentShader').textContent
+        };
+
+        //var shaderMaterial = new THREE.ShaderMaterial(customShader);
 
         var Model = function() {
             this.loadedMesh = null;
             this.meshIsLoaded = false;
+            this.customShader = null;
+            this.usesCustomShader = false;
         };
         
         Model.prototype = {
             constructor: Model,
 
-            load: function(path, mtlName, objName) {
+            loadOBJ: function(path, mtlName, objName) {
                 var that = this; // Used to save global Model scope in loader callback.
 
                 var onProgress = function(xhr) {
@@ -52,8 +94,10 @@
 
                 var onError = function(err) { };
 
+                var mtlLoader = new THREE.MTLLoader();
                 mtlLoader.setPath(path);
                 mtlLoader.load(mtlName, function(materials) {
+                    var objLoader = new THREE.OBJLoader();
                     materials.preload();
                     objLoader.setMaterials(materials);
                     objLoader.setPath(path);
@@ -63,6 +107,18 @@
                         that.meshIsLoaded = true;
                     });
                 }, onProgress, onError);
+            },
+
+            loadJSON: function(path, name) {
+                var that = this;
+                var jsonLoader = new THREE.JSONLoader();
+                jsonLoader.load(path + name, function(geometry, materials) {
+                    var material = new THREE.MultiMaterial(materials);
+                    var mesh = new THREE.Mesh(geometry, material);
+                    scene.add(mesh);
+                    that.loadedMesh = mesh;
+                    that.meshIsLoaded = true;
+                });
             }
         };
 
@@ -72,8 +128,8 @@
         var cube = new THREE.Mesh(cubeGeometry, greenMaterial);
         scene.add(cube);
 
-        var spaceman = new Model();
-        spaceman.load("ACES/", "acesjustforroomshow.mtl", "acesjustforroomshow.obj");
+        //var spaceman = new Model();
+        //spaceman.loadJSON("ACES/", "spaceman.js");
 
         function updateScene()
         {
