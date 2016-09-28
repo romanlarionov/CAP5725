@@ -33,17 +33,18 @@ ColorChecker.prototype = {
             "gl_FragColor = vec4(Color, 1.0);" +
         "}",
 
-    _sRGBTransformation: new THREE.Matrix4().set(3.2406, -0.9689, 0.0557, 0.0,
-                                           -1.5372, 1.8758, -0.204, 0.0
-                                           -0.4986, 0.0415, 1.057, 0.0,
-                                           0.0, 0.0, 0.0, 1.0),
-    
+   _sRGBTransformation: new THREE.Matrix4().set(3.2406, -1.5372, -0.4986, 0.0,
+                                                -0.9689, 1.8758, 0.0415, 0.0,
+                                                0.0557, -0.204, 1.057, 0.0,
+                                                0.0, 0.0, 0.0, 1.0),
+
     create: function(len) {
         if (len === null) len = 1;
         
         // color checker has 24 boxes with different colors
         var vertices = [];
         var colors = [];
+        var scalingFactor = this.computeScaling();
         for (var i = 0; i < 4; i++) {
             for (var j = 0; j < 6; j++) {
                 var stepx = i * len;
@@ -61,9 +62,8 @@ ColorChecker.prototype = {
 
                 // perform conversion of spectral information to RGB space then store in attribute buffer.
                 var xyz = this.spectrumToXYZ(i * 6 + j);
-                var rgbVec = this.XYZToRGB(this._sRGBTransformation, xyz);
+                var rgbVec = this.XYZToRGB(this._sRGBTransformation, xyz.multiplyScalar(1/scalingFactor));
                 var rgb = [rgbVec.x, rgbVec.y, rgbVec.z];
-                //var rgb = [i / 4, j / 6, 0];
                 for (var k = 0; k < 6; k++) {
                     colors.push.apply(colors, rgb);
                 }
@@ -95,17 +95,22 @@ ColorChecker.prototype = {
         for (var i = 0; i <= (780 - 380) / 5; i += 1) {
             // reflection spectrum function for individual checker
             var reflectanceSpectra = MacbethColorCheckerData[checkerIndex][i];
-            var lightSourceEmission = D65EmissionSpectra[i];
-            var reflectedLightIntesity = CIEColorMatchFunction[i];
-            X += reflectanceSpectra * lightSourceEmission * reflectedLightIntesity[0];
-            Y += reflectanceSpectra * lightSourceEmission * reflectedLightIntesity[1];
-            Z += reflectanceSpectra * lightSourceEmission * reflectedLightIntesity[2];
+            X += reflectanceSpectra * D65EmissionSpectra[i] * CIEColorMatchFunction[i][0];
+            Y += reflectanceSpectra * D65EmissionSpectra[i] * CIEColorMatchFunction[i][1];
+            Z += reflectanceSpectra * D65EmissionSpectra[i] * CIEColorMatchFunction[i][2];
         }
 
-        var XYZ = (X + Y + Z);
+        // return standard coordinates for current checker color
+        return new THREE.Vector4(X, Y, Z, 1.0);
+    },
 
-        // return xyY
-        return new THREE.Vector4(X/XYZ, Y/XYZ, Y, 1.0);
+    computeScaling: function() {
+        var Y = 0;
+        for (var i = 0; i <= (780 - 380) / 5; i += 1) {
+            Y +=  D65EmissionSpectra[i] * CIEColorMatchFunction[i][1];
+        }
+
+        return Y; 
     },
 
     /**
@@ -113,36 +118,13 @@ ColorChecker.prototype = {
      * Used to transform colors from chromaticity map to clamped 3D space
      * where RGB values range from 0 to 1.
      */
-    XYZToRGB: function(primaryColors, chromaticity) {
+    XYZToRGB: function(primaryColors, standardColor) {
 
-        //    T * rgb = I * chromaticity
-        // => T * rgb = chromaticity
-        // => rgb = T^-1 * chromaticity
+        //    T * rgb = I * standardColor
+        // => T * rgb = standardColor
+        // => rgb = T^-1 * standardColor
 
-        //var invertedPrimaries = new THREE.Matrix4();
-        //invertedPrimaries.getInverse(primaryColors);
-        chromaticity.set(chromaticity.z * chromaticity.x / chromaticity.y,
-                         chromaticity.z,
-                         chromaticity.z * (1 - chromaticity.x - chromaticity.y),
-                         1.0);
-        chromaticity.applyMatrix4(primaryColors);
-
-        return chromaticity.clone();
+        standardColor.applyMatrix4(primaryColors);
+        return standardColor.clone();
     }
-
-    /*_invert3x3Mat: function(mat) {
-        var a00 = mat[1][1] * mat[0][2] - mat[1][2] * mat[0][1];
-        var a01 = mat[1][0] * mat[0][2] - mat[1][2] * mat[0][0];
-        var a02 = mat[1][0] * mat[0][1] - mat[1][1] * mat[0][0];
-
-        var a10 = mat[2][1] * mat[0][2] - mat[2][2] * mat[0][1];
-        var a11 = mat[2][0] * mat[0][2] - mat[2][2] * mat[0][0];
-        var a12 = mat[2][0] * mat[0][1] - mat[2][1] * mat[0][0];
-
-        var a20 = mat[2][1] * mat[][] - mat[][] * mat[][];
-        var a21 = mat[][] * mat[][] - mat[][] * mat[][];
-        var a22 = mat[][] * mat[][] - mat[][] * mat[][];
-
-        return [[a00, a01, a02], [a10, a11, a12], [a20, a21, a22]];
-    }*/
 };

@@ -74,7 +74,7 @@
         // Set up three.js render context
         var scene = new THREE.Scene();
         var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.z = 20;
+        camera.position.z = 10;
 
         var renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -94,16 +94,10 @@
             renderer.setSize(window.innerWidth, window.innderHeight);
         }
 
-        render();
 
         // Scene objects
         var ambient = new THREE.AmbientLight(0xFFFFFF);
 		scene.add(ambient);
-
-        var cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-        var greenMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        var cube = new THREE.Mesh(cubeGeometry, greenMaterial);
-        scene.add(cube);
 
         var clock = new Date();
         var clampedTime = clock.getSeconds() / 60;
@@ -120,13 +114,15 @@
         var colorChecker = new ColorChecker();
         colorChecker.create(1);
         camera.add(colorChecker.checker);
-        colorChecker.checker.position.set(0, 0, -10);
+        colorChecker.checker.position.set(-2.5, 2.5, 0);
+        colorChecker.checker.rotation.set(0, 0, -1.57079632);
         scene.add(colorChecker.checker);
 
         function updateScene()
         {
         }
 
+        render();
         
 	</script>
 	</body>
