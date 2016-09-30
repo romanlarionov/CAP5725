@@ -36,7 +36,7 @@ Model.prototype = {
                     object.traverse(function (child) {
                         if (child instanceof THREE.Mesh) {
                             if (!(child.material instanceof THREE.MultiMaterial)) {
-                                child.material = createShader(child);
+                                child.material = createShader(shader, child);
                             }
                         }
                     });
@@ -78,7 +78,7 @@ Model.prototype = {
                     for (var uniform in uniforms) {
                         if (uniforms.hasOwnProperty(uniform)) { // if input not undefined
                             // If uniform never defined.
-                            if (!child.material.uniforms[uniform].hasOwnProperty(uniform)) {
+                            if (!child.material.uniforms[uniform]) {
                                 child.material.uniforms[uniform] = {};
                             }
                             child.material.uniforms[uniform] = uniforms[uniform];

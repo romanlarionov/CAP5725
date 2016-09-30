@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>Ideal Mirror Reflection Program</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r80/three.min.js"></script>
+	<script src="../lib/OBJLoader.js" type="text/javascript"></script>
+	<script src="../lib/MTLLoader.js" type="text/javascript"></script>
+	<script src="../lib/OrbitControls.js" type="text/javascript"></script>
+	<script src="../lib/KeyboardState.js" type="text/javascript"></script>
+	<script src="../src/js/model.js" type="text/javascript"></script>
+	<script src="../src/js/shader.js" type="text/javascript"></script>
+    <script>
+        // Set up three.js render context
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 5;
+        var cameraSpeed = 10;
+        var clock = new THREE.Clock();
+        var deltaTime;
+        
+        var ambient = new THREE.AmbientLight(0xFFFFFF);
+		scene.add(ambient);
+
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        window.addEventListener("resize", onWindowResize, false);
+        document.body.appendChild(renderer.domElement);
+
+        // User Input
+        var keyboard = new THREEx.KeyboardState();
+        var controls = new THREE.OrbitControls(camera, renderer.domElement);
+		controls.enableDamping = true;
+		controls.dampingFactor = 0.25;
+		controls.enableZoom = false;
+
+        // Environment Map
+        var woodsPath = "../assets/cube_maps/woods/";
+        var cubeMap = new THREE.CubeTextureLoader();
+        cubeMap.load([woodsPath + 'posx.jpg', woodsPath + 'negx.jpg',
+                      woodsPath + 'posy.jpg', woodsPath + 'negy.jpg',
+                      woodsPath + 'posz.jpg', woodsPath + 'negz.jpg']);
+
+        cubeMap.format = THREE.RGBFormat;
+        //scene.background = cubeMap;
+
+        // Scene objects
+        var basicShader = new Shader("model", {});
+
+        var spaceman = new Model();
+        spaceman.loadOBJ("../assets/models/ACES/", "acesjustforroomshow", basicShader.material, function(shader, obj) {
+            var result = shader.clone();
+            result.uniforms["color"] = {type: 'v3', value: obj.material["color"]};
+            result.uniforms["specular"] = {type: 'v3', value: obj.material["specular"]};
+            return result;
+        });
+
+        var mirrorShader = new Shader("basic", {});
+
+        // Renderable square surface
+        var square = new THREE.Geometry();
+        square.vertices.push(new THREE.Vector3(0, 0, 0));
+        square.vertices.push(new THREE.Vector3(0, 10, 0));
+        square.vertices.push(new THREE.Vector3(10, 10, 0));
+        square.vertices.push(new THREE.Vector3(10, 0, 0));
+        square.vertices.push(new THREE.Vector3(0, 0, 0));
+        square.faces.push(new THREE.Face3(0, 1, 2));
+        square.faces.push(new THREE.Face3(0, 3, 2));
+
+        var squareMesh = new THREE.Mesh(square, mirrorShader);
+        squareMesh.position.set(-7, 7, 0);
+        squareMesh.scale.set(5, 5, 5);
+        squareMesh.rotation.y = Math.PI;
+        scene.add(squareMesh);
+
+        function updateScene()
+        {
+            delta = clock.getDelta();
+
+            if (spaceman.meshIsLoaded) {
+                spaceman.loadedMesh.position.y = -7;
+                spaceman.loadedMesh.position.z = 7;
+                spaceman.loadedMesh.rotation.y = Math.PI;
+                spaceman.loadedMesh.scale.set(5, 5, 5);
+            }
+
+            squareMesh.rotation.y += cameraSpeed * delta;
+        }
+
+        // Render
+        function render() {
+            requestAnimationFrame(render);
+            checkInput();
+            updateScene();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize(event) {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innderHeight);
+        }
+
+        function checkInput() {
+            delta = clock.getDelta();
+
+            if (keyboard.pressed('W'))
+                camera.position.z -= cameraSpeed * delta;
+
+            // todo: for whatever reason, translating changes the rotation of the camera..
+            // I think it has to do with not updating the global-space lookAt vector.
+            if (keyboard.pressed('A')) 
+                camera.position.x -= cameraSpeed * delta;
+   
+            if (keyboard.pressed('S'))
+                camera.position.z += cameraSpeed * delta;
+
+            if (keyboard.pressed('d'))
+                camera.position.x += cameraSpeed * delta;
+
+            controls.update();
+        }
+
+        render();
+	</script>
+	</body>
+</html>
