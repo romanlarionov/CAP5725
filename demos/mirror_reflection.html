@@ -42,17 +42,27 @@
 		controls.enableZoom = false;
 
         // Environment Map
-        var woodsPath = "../assets/cube_maps/woods/";
-        var cubeMap = new THREE.CubeTextureLoader();
-        cubeMap.load([woodsPath + 'posx.jpg', woodsPath + 'negx.jpg',
-                      woodsPath + 'posy.jpg', woodsPath + 'negy.jpg',
-                      woodsPath + 'posz.jpg', woodsPath + 'negz.jpg']);
+        var cubeMapLoader = new THREE.CubeTextureLoader();
+        cubeMapLoader.setPath("../assets/cube_maps/woods/");
+        var cubeMap = cubeMapLoader.load(['posx.jpg', 'negx.jpg',
+                      'posy.jpg', 'negy.jpg',
+                      'posz.jpg', 'negz.jpg']);
+
+        var skyMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            envMap: cubeMap,
+            side: THREE.FrontSide
+        });
+
+        var skyGeometry = new THREE.BoxGeometry(2000, 2000, 2000);
+        var skyMesh = new THREE.Mesh(skyGeometry, skyMaterial);
+        scene.add(skyMesh);
 
         cubeMap.format = THREE.RGBFormat;
-        //scene.background = cubeMap;
+        scene.background = cubeMap;
 
         // Scene objects
-        var basicShader = new Shader("model", {});
+        var basicShader = new Shader("model");
 
         var spaceman = new Model();
         spaceman.loadOBJ("../assets/models/ACES/", "acesjustforroomshow", basicShader.material, function(shader, obj) {
@@ -62,22 +72,28 @@
             return result;
         });
 
-        var mirrorShader = new Shader("basic", {});
+        var mirrorShader = new Shader("smooth_mirror", {
+            envMap: { type: 't', value: cubeMap },
+            Camera: { type: 'v3', value: camera.position }
+        });
 
         // Renderable square surface
         var square = new THREE.Geometry();
         square.vertices.push(new THREE.Vector3(0, 0, 0));
-        square.vertices.push(new THREE.Vector3(0, 10, 0));
-        square.vertices.push(new THREE.Vector3(10, 10, 0));
-        square.vertices.push(new THREE.Vector3(10, 0, 0));
+        square.vertices.push(new THREE.Vector3(0, 1, 0));
+        square.vertices.push(new THREE.Vector3(1, 1, 0));
         square.vertices.push(new THREE.Vector3(0, 0, 0));
+        square.vertices.push(new THREE.Vector3(1, 1, 0));
+        square.vertices.push(new THREE.Vector3(1, 0, 0));
         square.faces.push(new THREE.Face3(0, 1, 2));
-        square.faces.push(new THREE.Face3(0, 3, 2));
+        square.faces.push(new THREE.Face3(3, 4, 5));
+        square.computeVertexNormals();
 
-        var squareMesh = new THREE.Mesh(square, mirrorShader);
-        squareMesh.position.set(-7, 7, 0);
-        squareMesh.scale.set(5, 5, 5);
-        squareMesh.rotation.y = Math.PI;
+        var squareMesh = new THREE.Mesh(square, mirrorShader.material);
+        squareMesh.scale.set(15, 15, 0);
+        camera.add(squareMesh);
+        squareMesh.position.set(-5, -5, -10);
+        squareMesh.rotation.y += Math.PI;
         scene.add(squareMesh);
 
         function updateScene()
@@ -91,7 +107,7 @@
                 spaceman.loadedMesh.scale.set(5, 5, 5);
             }
 
-            squareMesh.rotation.y += cameraSpeed * delta;
+            squareMesh.material.uniforms["camera"] = {type: 'v3', value: camera.position};
         }
 
         // Render
