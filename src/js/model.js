@@ -38,6 +38,7 @@ Model.prototype = {
                             if (!(child.material instanceof THREE.MultiMaterial)) {
                                 child.material = createShader(shader, child);
                             }
+                            child.geometry.computeVertexNormals();
                         }
                     });
 
@@ -54,11 +55,12 @@ Model.prototype = {
     loadJSON: function(path, name, shader) {
         var that = this;
         var jsonLoader = new THREE.JSONLoader();
-        jsonLoader.load(path + name, function(geometry, materials) {
+        jsonLoader.load(path + name + '.js', function(geometry, materials) {
             var material = shader;
             if (!material) {
                 material = new THREE.MultiMaterial(materials);
             }
+            geometry.computeVertexNormals();
             var mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
             that.loadedMesh = mesh;

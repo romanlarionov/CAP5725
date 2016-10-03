@@ -9,6 +9,7 @@ uniform mat3 normalMatrix;
 
 attribute vec3 position;
 attribute vec3 normal;
+attribute vec2 uv;
 
 varying vec3 Position;
 varying vec3 Normal;

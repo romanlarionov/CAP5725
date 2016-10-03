@@ -62,19 +62,26 @@
         scene.background = cubeMap;
 
         // Scene objects
-        var basicShader = new Shader("model");
-
-        var spaceman = new Model();
-        spaceman.loadOBJ("../assets/models/ACES/", "acesjustforroomshow", basicShader.material, function(shader, obj) {
-            var result = shader.clone();
-            result.uniforms["color"] = {type: 'v3', value: obj.material["color"]};
-            result.uniforms["specular"] = {type: 'v3', value: obj.material["specular"]};
-            return result;
-        });
-
         var mirrorShader = new Shader("smooth_mirror", {
             envMap: { type: 't', value: cubeMap },
-            Camera: { type: 'v3', value: camera.position }
+            camera: { type: 'v3', value: camera.position }
+        });
+
+        var normalMapMirrorShader = new Shader("smooth_mirror_map", {
+            envMap: { type: 't', value: cubeMap },
+            camera: { type: 'v3', value: camera.position }
+        });
+
+        var modelShader = new Shader("model");
+
+        var spaceman = new Model();
+        spaceman.loadJSON("../assets/models/ACES/", "spaceman", mirrorShader.material);
+
+        var oldMan = new Model();
+        oldMan.loadOBJ("../assets/models/old_man/", "muro", normalMapMirrorShader.material, function(shader, obj) {
+            var result = shader.clone();
+            result.uniforms["bumpMap"] = {type: 't', value: obj.material["bumpMap"]};
+            return result;
         });
 
         // Renderable square surface
@@ -105,6 +112,12 @@
                 spaceman.loadedMesh.position.z = 7;
                 spaceman.loadedMesh.rotation.y = Math.PI;
                 spaceman.loadedMesh.scale.set(5, 5, 5);
+                spaceman.updateUniforms({type: 'v3', value: camera.position});
+            }
+
+            if (oldMan.meshIsLoaded) {
+                oldMan.loadedMesh.position.set(0, -7, -7);
+                oldMan.loadedMesh.scale.set(0.05, 0.05, 0.05);
             }
 
             squareMesh.material.uniforms["camera"] = {type: 'v3', value: camera.position};
