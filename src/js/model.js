@@ -32,11 +32,11 @@ Model.prototype = {
             objLoader.setMaterials(materials);
             objLoader.setPath(path);
             objLoader.load(name + ".obj", function(object) {
-                if (shader) {
+                if (createShader) {
                     object.traverse(function (child) {
                         if (child instanceof THREE.Mesh) {
                             if (!(child.material instanceof THREE.MultiMaterial)) {
-                                child.material = createShader(shader, child);
+                                child.material = createShader(child);
                             }
                             child.geometry.computeVertexNormals();
                         }

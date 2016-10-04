@@ -61,27 +61,41 @@
         cubeMap.format = THREE.RGBFormat;
         scene.background = cubeMap;
 
+        var metalTypes = {
+            Gold: new THREE.Vector3(1.00, 0.71, 0.29),
+            Silver: new THREE.Vector3(0.95, 0.93, 0.88),
+            Copper: new THREE.Vector3(0.95, 0.64, 0.54),
+            Iron: new THREE.Vector3(0.56, 0.57, 0.58),
+            Aluminum: new THREE.Vector3(0.91, 0.92, 0.92)
+        }
+
         // Scene objects
         var mirrorShader = new Shader("smooth_mirror", {
             envMap: { type: 't', value: cubeMap },
-            camera: { type: 'v3', value: camera.position }
+            camera: { type: 'v3', value: camera.position },
+            normalFresnel: { type: 'v3', value: metalTypes.Gold }
         });
 
-        var normalMapMirrorShader = new Shader("smooth_mirror_map", {
+        /*var normalMapMirrorShader = new Shader("smooth_mirror_map", {
             envMap: { type: 't', value: cubeMap },
             camera: { type: 'v3', value: camera.position }
-        });
-
-        var modelShader = new Shader("model");
+        });*/
 
         var spaceman = new Model();
         spaceman.loadJSON("../assets/models/ACES/", "spaceman", mirrorShader.material);
-
+        
         var oldMan = new Model();
-        oldMan.loadOBJ("../assets/models/old_man/", "muro", normalMapMirrorShader.material, function(shader, obj) {
-            var result = shader.clone();
-            result.uniforms["bumpMap"] = {type: 't', value: obj.material["bumpMap"]};
-            return result;
+        oldMan.loadOBJ("../assets/models/old_man/", "muro", null, function(obj) {
+            // todo: for some reason, copying the passed in shader does not work.
+            // Need to find a way to avoid new shader creation for every submesh.
+            var s = new Shader("smooth_mirror_map", {
+                envMap: { type: 't', value: cubeMap },
+                camera: { type: 'v3', value: camera.position },
+                bumpMap: {type: 't', value: obj.material["bumpMap"]},
+                normalFresnel: { type: 'v3', value: metalTypes.Silver }
+            });
+
+            return s.material;
         });
 
         // Renderable square surface
