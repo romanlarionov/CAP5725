@@ -132,6 +132,7 @@
             if (oldMan.meshIsLoaded) {
                 oldMan.loadedMesh.position.set(0, -7, -7);
                 oldMan.loadedMesh.scale.set(0.05, 0.05, 0.05);
+                oldMan.updateUniforms({type: 'v3', value: camera.position});
             }
 
             squareMesh.material.uniforms["camera"] = {type: 'v3', value: camera.position};
