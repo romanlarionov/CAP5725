@@ -1,7 +1,7 @@
 CAP 5725 (Computer Graphics)
 =====================================
 
-Source code for several projects from the graduate computer graphics I course at UCF.
+Source code for several projects from the Fall 2016 graduate computer graphics course at UCF.
 
 Demos include: 
 * simple model loader
